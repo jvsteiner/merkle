@@ -82,7 +82,6 @@ func BenchmarkFromDigest(b *testing.B) {
 	}
 	b.ResetTimer()
 	merkle.NewTreeFromDigests(t)
-	b.StopTimer()
 }
 
 func BenchmarkAddAdjust(b *testing.B) {
@@ -95,7 +94,6 @@ func BenchmarkAddAdjust(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		t.AddAdjust(s[i])
 	}
-	b.StopTimer()
 }
 
 func init() {
