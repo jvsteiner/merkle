@@ -6,7 +6,7 @@ import (
 	"runtime"
 	"testing"
 
-	"bitbucket.org/jvsteiner/merkle"
+	"github.com/jvsteiner/merkle"
 
 	"github.com/stretchr/testify/assert"
 )
