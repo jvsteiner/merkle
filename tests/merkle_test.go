@@ -19,26 +19,22 @@ func NewTestData() (t [][]byte) {
 	return
 }
 
-func NewTestDigests() (t [][]byte) {
-	a := sha256.Sum256([]byte("a"))
-	b := sha256.Sum256([]byte("b"))
-	c := sha256.Sum256([]byte("c"))
-	d := sha256.Sum256([]byte("d"))
-	t = append(t, a[:])
-	t = append(t, b[:])
-	t = append(t, c[:])
-	t = append(t, d[:])
+func NewTestDigests() (t [][32]byte) {
+	t = append(t, sha256.Sum256([]byte("a")))
+	t = append(t, sha256.Sum256([]byte("b")))
+	t = append(t, sha256.Sum256([]byte("c")))
+	t = append(t, sha256.Sum256([]byte("d")))
 	return
 }
 
 func TestBuildData(t *testing.T) {
 	tree := merkle.NewTreeFromData(NewTestData())
-	assert.True(t, hex.EncodeToString(tree.Root.Digest) == "14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7", "Wrong root calculated from Data")
+	assert.True(t, hex.EncodeToString(tree.Root.Digest[:]) == "14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7", "Wrong root calculated from Data")
 }
 
 func TestBuildDigests(t *testing.T) {
 	tree := merkle.NewTreeFromDigests(NewTestDigests())
-	assert.True(t, hex.EncodeToString(tree.Root.Digest) == "14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7", "Wrong root calculated from Digests")
+	assert.True(t, hex.EncodeToString(tree.Root.Digest[:]) == "14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7", "Wrong root calculated from Digests")
 }
 
 func TestRelationships(t *testing.T) {
@@ -75,10 +71,9 @@ func TestAddAdjust(t *testing.T) {
 }
 
 func BenchmarkFromDigest(b *testing.B) {
-	t := [][]byte{}
+	t := [][32]byte{}
 	for i := 0; i < b.N; i++ {
-		a := sha256.Sum256([]byte("a"))
-		t = append(t, a[:])
+		t = append(t, sha256.Sum256([]byte("a")))
 	}
 	b.ResetTimer()
 	merkle.NewTreeFromDigests(t)

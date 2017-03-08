@@ -10,7 +10,7 @@ import (
 // element struct, holds digest and relationships
 type Node struct {
 	// Height              int32
-	Digest              []byte
+	Digest              [32]byte
 	LeftSide            bool
 	Parent, Left, Right *Node
 }
@@ -62,27 +62,26 @@ func BitLen(value int) (count uint) {
 // Constructor for a Node, based on underlying data.  For construction based on a precalculated digest
 // simply use node := merkle.Node{Digest: digest[:]} as suggested below.
 func NewNode(data []byte) *Node {
-	digest := sha256.Sum256(data)
-	n := &Node{Digest: digest[:]}
+	n := &Node{Digest: sha256.Sum256(data)}
 	return n
 }
 
 // return the Hex digest of a node
 func (n Node) Hexdigest() string {
-	return hex.EncodeToString(n.Digest)
+	return hex.EncodeToString(n.Digest[:])
 }
 
 // create a hexified version of the node
 func (n *Node) AsHex() HexNode {
 	h := HexNode{
-		Digest: hex.EncodeToString(n.Digest),
+		Digest: hex.EncodeToString(n.Digest[:]),
 		Left:   n.LeftSide,
 	}
 	return h
 }
 
 // Tree constructor when the digests are known for all leaves.
-func NewTreeFromDigests(digests [][]byte) *Tree {
+func NewTreeFromDigests(digests [][32]byte) *Tree {
 	t := &Tree{}
 	for i := range digests {
 		t.Leaves = append(t.Leaves, &Node{Digest: digests[i]})
@@ -108,7 +107,7 @@ func NewTreeFromData(data [][]byte) *Tree {
 }
 
 // Method to add a node to the leaves, when the digest is known, doesn't recalculate the root.
-func Add(t *Tree, d []byte) {
+func Add(t *Tree, d [32]byte) {
 	t.Leaves = append(t.Leaves, &Node{Digest: d})
 }
 
@@ -118,9 +117,9 @@ func AddData(t *Tree, data []byte) {
 }
 
 // call, once the leaves are defined, to calculate the root.
-func (t *Tree) Build() ([]byte, error) {
+func (t *Tree) Build() ([32]byte, error) {
 	if len(t.Leaves) == 0 {
-		return []byte{}, errors.New("No leaves to build")
+		return [32]byte{}, errors.New("No leaves to build")
 	}
 	layer := t.Leaves[:]
 	for len(layer) != 1 {
@@ -138,27 +137,27 @@ func build(layer []*Node) (newLayer []*Node) {
 		layer = layer[:len(layer)-1]
 	}
 	for i := 0; i <= len(layer)-1; i += 2 {
-		newDigest := sha256.Sum256(append(layer[i].Digest, layer[i+1].Digest...))
+		newDigest := sha256.Sum256(append(layer[i].Digest[:], layer[i+1].Digest[:]...))
 		newNode := Node{
-			Digest: newDigest[:],
+			Digest: newDigest,
 		}
 		newNode.Left, newNode.Right = layer[i], layer[i+1]
 		layer[i].LeftSide, layer[i+1].LeftSide = true, false
 		layer[i].Parent, layer[i+1].Parent = &newNode, &newNode
 		newLayer = append(newLayer, &newNode)
 	}
-	if odd.Digest != nil {
+	if odd.Digest != [32]byte{} {
 		newLayer = append(newLayer, odd)
 	}
 	return
 }
 
 // add a new Node to a calculated tree, efficiently reclaculating the root.
-func (t *Tree) AddAdjust(newNode *Node) []byte {
+func (t *Tree) AddAdjust(newNode *Node) [32]byte {
 	subtrees := t.getWholeSubTrees()
 	t.Leaves = append(t.Leaves, newNode)
 	for i := len(subtrees) - 1; i >= 0; i-- {
-		newParent := NewNode(append(subtrees[i].Digest, newNode.Digest...))
+		newParent := NewNode(append(subtrees[i].Digest[:], newNode.Digest[:]...))
 		subtrees[i].Parent, newNode.Parent = newParent, newParent
 		newParent.Left, newParent.Right = subtrees[i], newNode
 		subtrees[i].LeftSide, newNode.LeftSide = true, false
