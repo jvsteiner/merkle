@@ -7,7 +7,7 @@ import (
 	"errors"
 )
 
-// element struct, holds digest and relationships
+// Node element struct, holds digest and relationships
 type Node struct {
 	// Height              int32
 	Digest              [32]byte
@@ -15,7 +15,7 @@ type Node struct {
 	Parent, Left, Right *Node
 }
 
-// a serielizable representation of a node for JSON encoding
+// HexNode is a serielizable representation of a node for JSON encoding
 type HexNode struct {
 	Digest string `json:"digest" binding:"required"`
 	Left   bool   `json:"left" binding:"required"`
@@ -30,14 +30,14 @@ func (h Node) String() string {
 	return string(s)
 }
 
-// only the root is held, HashFunction is unused currently
+// Tree is the structure. Only the root is held, HashFunction is unused currently
 type Tree struct {
 	Root         *Node
 	HashFunction string
 	Leaves       []*Node
 }
 
-// not much used now, perhaps useful to serialize a chain
+// Chain is not much used now, perhaps useful to serialize a chain
 type Chain []*Node
 
 // func (c Chain) String() string {
@@ -50,7 +50,7 @@ type Chain []*Node
 
 // Utility function to effieciently calculate the max number of bits required to represent an
 // integer, more performant by several times than the math.Log2 function
-func BitLen(value int) (count uint) {
+func bitLen(value int) (count uint) {
 	count = 0
 	for value > 0 {
 		count++
@@ -59,19 +59,19 @@ func BitLen(value int) (count uint) {
 	return
 }
 
-// Constructor for a Node, based on underlying data.  For construction based on a precalculated digest
+// NewNode is a constructor for a Node, based on underlying data.  For construction based on a precalculated digest
 // simply use node := merkle.Node{Digest: digest[:]} as suggested below.
 func NewNode(data []byte) *Node {
 	n := &Node{Digest: sha256.Sum256(data)}
 	return n
 }
 
-// return the Hex digest of a node
+// Hexdigest returns the Hex digest of a node
 func (n Node) Hexdigest() string {
 	return hex.EncodeToString(n.Digest[:])
 }
 
-// create a hexified version of the node
+// AsHex creates a hexified version of the node
 func (n *Node) AsHex() HexNode {
 	h := HexNode{
 		Digest: hex.EncodeToString(n.Digest[:]),
@@ -80,7 +80,7 @@ func (n *Node) AsHex() HexNode {
 	return h
 }
 
-// Tree constructor when the digests are known for all leaves.
+// NewTreeFromDigests constructor can be used when the digests are known for all leaves.
 func NewTreeFromDigests(digests [][32]byte) *Tree {
 	t := &Tree{}
 	for i := range digests {
@@ -93,7 +93,7 @@ func NewTreeFromDigests(digests [][32]byte) *Tree {
 	return t
 }
 
-// Tree constructor when the data are known for all leaves.
+// NewTreeFromData constructor for when the data are known for all leaves.
 func NewTreeFromData(data [][]byte) *Tree {
 	t := &Tree{}
 	for i := range data {
@@ -106,17 +106,17 @@ func NewTreeFromData(data [][]byte) *Tree {
 	return t
 }
 
-// Method to add a node to the leaves, when the digest is known, doesn't recalculate the root.
+// Add method to add a node to the leaves, when the digest is known, doesn't recalculate the root.
 func Add(t *Tree, d [32]byte) {
 	t.Leaves = append(t.Leaves, &Node{Digest: d})
 }
 
-// Method to add a node to the leaves, when the data is known, doesn't recalculate the root.
+// AddData method to add a node to the leaves, when the data is known, doesn't recalculate the root.
 func AddData(t *Tree, data []byte) {
 	t.Leaves = append(t.Leaves, NewNode(data))
 }
 
-// call, once the leaves are defined, to calculate the root.
+// Build: call, once the leaves are defined, to calculate the root.
 func (t *Tree) Build() ([32]byte, error) {
 	if len(t.Leaves) == 0 {
 		return [32]byte{}, errors.New("No leaves to build")
@@ -152,7 +152,7 @@ func build(layer []*Node) (newLayer []*Node) {
 	return
 }
 
-// add a new Node to a calculated tree, efficiently reclaculating the root.
+// AddAdjust adds a new Node to a calculated tree, efficiently reclaculating the root.
 func (t *Tree) AddAdjust(newNode *Node) [32]byte {
 	subtrees := t.getWholeSubTrees()
 	t.Leaves = append(t.Leaves, newNode)
@@ -173,18 +173,18 @@ func (t *Tree) AddAdjust(newNode *Node) [32]byte {
 func (t *Tree) getWholeSubTrees() []*Node {
 	// var subtrees []*Node
 	subtrees := []*Node{}
-	looseLeaves := len(t.Leaves) - (1 << (BitLen(len(t.Leaves)) - 1))
+	looseLeaves := len(t.Leaves) - (1 << (bitLen(len(t.Leaves)) - 1))
 	theNode := t.Root
 	for looseLeaves != 0 {
 		subtrees = append(subtrees, theNode.Left)
 		theNode = theNode.Right
-		looseLeaves = looseLeaves - (1 << (BitLen(looseLeaves) - 1))
+		looseLeaves = looseLeaves - (1 << (bitLen(looseLeaves) - 1))
 	}
 	subtrees = append(subtrees, theNode)
 	return subtrees
 }
 
-// Get the chain, from the leaf at index i, to the root.
+// GetChain gets the chain, from the leaf at index i, to the root.
 func (t *Tree) GetChain(i int) (Chain, error) {
 	chain := Chain{}
 	if i > len(t.Leaves)-1 || i < 0 {
@@ -199,7 +199,7 @@ func (t *Tree) GetChain(i int) (Chain, error) {
 	return chain, nil
 }
 
-// get a slice of chains, one for each leaf, probably could be optimized
+// GetAllChains gets a slice of chains, one for each leaf, probably could be optimized
 // to reduce the number of traversals.
 func (t *Tree) GetAllChains() ([]Chain, error) {
 	chains := []Chain{}
