@@ -22,8 +22,8 @@ type HexNode struct {
 }
 
 // Use JSON version to satisfy Stringer interface
-func (h Node) String() string {
-	s, err := json.Marshal(h.AsHex())
+func (n Node) String() string {
+	s, err := json.Marshal(n.AsHex())
 	if err != nil {
 		panic(err)
 	}
