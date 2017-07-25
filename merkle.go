@@ -116,7 +116,7 @@ func AddData(t *Tree, data []byte) {
 	t.Leaves = append(t.Leaves, NewNode(data))
 }
 
-// Build: call, once the leaves are defined, to calculate the root.
+// Build the tree: call, once the leaves are defined, to calculate the root.
 func (t *Tree) Build() ([32]byte, error) {
 	if len(t.Leaves) == 0 {
 		return [32]byte{}, errors.New("No leaves to build")
