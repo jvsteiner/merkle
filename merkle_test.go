@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func NewTestData() (t [][]byte) {
@@ -17,22 +18,29 @@ func NewTestData() (t [][]byte) {
 	return
 }
 
-func NewTestDigests() (t [][32]byte) {
-	t = append(t, sha256.Sum256([]byte("a")))
-	t = append(t, sha256.Sum256([]byte("b")))
-	t = append(t, sha256.Sum256([]byte("c")))
-	t = append(t, sha256.Sum256([]byte("d")))
+func NewTestDigests() (t [][]byte) {
+	a := sha256.Sum256([]byte("a"))
+	t = append(t, a[:])
+	b := sha256.Sum256([]byte("b"))
+	t = append(t, b[:])
+	c := sha256.Sum256([]byte("c"))
+	t = append(t, c[:])
+	d := sha256.Sum256([]byte("d"))
+	t = append(t, d[:])
 	return
 }
 
 func TestBuildData(t *testing.T) {
 	tree := NewTreeFromData(NewTestData())
-	assert.True(t, hex.EncodeToString(tree.Root.Digest[:]) == "14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7", "Wrong root calculated from Data")
+	testval := hex.EncodeToString(tree.Root.Digest)
+	assert.True(t, testval == "14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7", testval)
 }
 
 func TestBuildDigests(t *testing.T) {
-	tree := NewTreeFromDigests(NewTestDigests())
-	assert.True(t, hex.EncodeToString(tree.Root.Digest[:]) == "14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7", "Wrong root calculated from Digests")
+	tree, err := NewTreeFromDigests(NewTestDigests())
+	require.NoError(t, err)
+	testval := hex.EncodeToString(tree.Root.Digest)
+	assert.True(t, testval == "14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7", testval)
 }
 
 func TestRelationships(t *testing.T) {
@@ -69,9 +77,10 @@ func TestAddAdjust(t *testing.T) {
 }
 
 func BenchmarkFromDigest(b *testing.B) {
-	t := [][32]byte{}
+	t := [][]byte{}
 	for i := 0; i < b.N; i++ {
-		t = append(t, sha256.Sum256([]byte("a")))
+		d := sha256.Sum256([]byte("a"))
+		t = append(t, d[:])
 	}
 	b.ResetTimer()
 	NewTreeFromDigests(t)
