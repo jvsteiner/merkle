@@ -9,20 +9,14 @@ import (
 
 // Node element struct, holds digest and relationships
 type Node struct {
-	Digest              []byte
-	LeftSide            bool
+	Digest              []byte `json:"digest" binding:"required"`
+	LeftSide            bool   `json:"left" binding:"required"`
 	Parent, Left, Right *Node
-}
-
-// HexNode is a serializable representation of a node for JSON encoding
-type HexNode struct {
-	Digest string `json:"digest" binding:"required"`
-	Left   bool   `json:"left" binding:"required"`
 }
 
 // Use JSON version to satisfy Stringer interface
 func (n Node) String() string {
-	s, _ := json.Marshal(n.AsHex())
+	s, _ := json.Marshal(n)
 	return string(s)
 }
 
@@ -58,15 +52,6 @@ func NewNode(data []byte) *Node {
 // Hexdigest returns the Hex digest of a node
 func (n Node) Hexdigest() string {
 	return hex.EncodeToString(n.Digest[:])
-}
-
-// AsHex creates a hexified version of the node
-func (n *Node) AsHex() HexNode {
-	h := HexNode{
-		Digest: hex.EncodeToString(n.Digest[:]),
-		Left:   n.LeftSide,
-	}
-	return h
 }
 
 // NewTreeFromDigests constructor can be used when the digests are known for all leaves.
