@@ -30,15 +30,15 @@ type Tree struct {
 // Chain is not much used now, perhaps useful to serialize a chain
 type Chain []*Node
 
-// Utility function to effieciently calculate the max number of bits required to represent an
-// integer, more performant by several times than the math.Log2 function
-func bitLen(value int) (count uint) {
-	count = 0
-	for value > 0 {
-		count++
-		value = value >> 1
-	}
-	return
+// Utility function to efficiently calculate the greatest power of 2 less that a given
+// integer, more performant by several times than solutions using the math.Log2 function
+func hibit(n int) int {
+	n |= (n >> 1)
+	n |= (n >> 2)
+	n |= (n >> 4)
+	n |= (n >> 8)
+	n |= (n >> 16)
+	return n - (n >> 1)
 }
 
 // NewNode is a constructor for a Node, based on underlying data.  For construction based on a precalculated digest
@@ -145,14 +145,13 @@ func (t *Tree) AddAdjust(newNode *Node) []byte {
 // All trees consist of some number of subtrees.  This is used to recalculate the root
 // without recalculating all the hashes.
 func (t *Tree) getWholeSubTrees() []*Node {
-	// var subtrees []*Node
 	subtrees := []*Node{}
-	looseLeaves := len(t.Leaves) - (1 << (bitLen(len(t.Leaves)) - 1))
+	looseLeaves := len(t.Leaves) - hibit(len(t.Leaves))
 	theNode := t.Root
 	for looseLeaves != 0 {
 		subtrees = append(subtrees, theNode.Left)
 		theNode = theNode.Right
-		looseLeaves = looseLeaves - (1 << (bitLen(looseLeaves) - 1))
+		looseLeaves = looseLeaves - hibit(looseLeaves)
 	}
 	subtrees = append(subtrees, theNode)
 	return subtrees
