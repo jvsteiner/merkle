@@ -34,9 +34,9 @@ func hibit(n int) int {
 	return n - (n >> 1)
 }
 
-// Newnode is a constructor for a node, based on underlying data.  For construction based on a precalculated digest
+// newNode is a constructor for a node, based on underlying data.  For construction based on a precalculated digest
 // simply use node := merkle.node{Digest: digest[:]} as suggested below.
-func Newnode(data []byte) *node {
+func newNode(data []byte) *node {
 	digest := sha256.Sum256(data)
 	n := &node{Digest: digest[:]}
 	return n
@@ -64,7 +64,7 @@ func NewTreeFromDigests(digests [][]byte) (*Tree, error) {
 func NewTreeFromData(data [][]byte) *Tree {
 	t := &Tree{}
 	for i := range data {
-		t.Leaves = append(t.Leaves, Newnode(data[i]))
+		t.Leaves = append(t.Leaves, newNode(data[i]))
 	}
 	_, err := t.Build()
 	if err != nil {
@@ -90,7 +90,7 @@ func (t *Tree) AddDigest(d []byte) {
 
 // AddData method to add a node to the leaves, when the data is known, doesn't recalculate the root.
 func (t *Tree) AddData(data []byte) {
-	t.Leaves = append(t.Leaves, Newnode(data))
+	t.Leaves = append(t.Leaves, newNode(data))
 }
 
 // Build the tree: call, once the leaves are defined, to calculate the root.
@@ -145,7 +145,7 @@ func (t *Tree) append(newnode *node) []byte {
 	subtrees := t.getWholeSubTrees()
 	t.Leaves = append(t.Leaves, newnode)
 	for i := len(subtrees) - 1; i >= 0; i-- {
-		newParent := Newnode(append(subtrees[i].Digest[:], newnode.Digest[:]...))
+		newParent := newNode(append(subtrees[i].Digest[:], newnode.Digest[:]...))
 		subtrees[i].Parent, newnode.Parent = newParent, newParent
 		newParent.Left, newParent.Right = subtrees[i], newnode
 		subtrees[i].LeftSide, newnode.LeftSide = true, false

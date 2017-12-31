@@ -6,13 +6,17 @@ import "crypto/sha256"
 // complete subtree.
 type bigNode struct {
 	digest []byte
-
-	// Represents the number of leaves that this node has under it and summarizes
-	sumOf int
+	sumOf  int
 }
 
-// BigTree is an optimized merkle tree structure. Only a slice of complete subtree roots is held for
-// memory efficiency.
+// BigTree is an optimized merkle tree structure. Only a stack containing complete subtree roots is held in memory.
+// BigTreess are more performant at adding new leaves than Trees, and maintain nearly constant memory usage, however
+// currently they do not allow the user to retrieve hash chains from them - this feature will be added in the future,
+// however, it will inevitably be slower than what is possible for an all-memory tree.
+//
+// The design goal of BigTree is to provide a cloud scalable merkle tree - one that can facilitate trees with a max
+// number of leaves of 18446744073709551615 (max unit64) and still maintain acceptable memory usage, and servicable
+// hash chain retrieval times.
 type BigTree struct {
 	roots *stack
 }
@@ -56,6 +60,7 @@ func combine(l, r *bigNode) *bigNode {
 	return &bigNode{digest: d[:], sumOf: l.sumOf + r.sumOf}
 }
 
+// Root returns the merkle root of a tree - this is calculated upon request, using the stack of whole-subtree merkle roots.
 func (t *BigTree) Root() []byte {
 	top := t.roots.first()
 	if top == nil {
