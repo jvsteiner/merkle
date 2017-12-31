@@ -42,11 +42,6 @@ func newNode(data []byte) *node {
 	return n
 }
 
-// Hexdigest returns the Hex digest of a node
-func (n node) Hexdigest() string {
-	return hex.EncodeToString(n.digest[:])
-}
-
 // NewTreeFromDigests constructor can be used when the digests are known for all leaves.
 func NewTreeFromDigests(digests [][]byte) (*Tree, error) {
 	t := &Tree{}
@@ -84,7 +79,7 @@ func (t *Tree) HexRoot() string {
 }
 
 // Add method to add a node to the leaves, when the digest is known, doesn't recalculate the root.
-func (t *Tree) Adddigest(d []byte) {
+func (t *Tree) Add(d []byte) {
 	t.leaves = append(t.leaves, &node{digest: d})
 }
 
