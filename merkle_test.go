@@ -57,13 +57,9 @@ func TestGetChain(t *testing.T) {
 	chain, err := tree.GetChain(0)
 	assert.True(t, err == nil, "Single Chain should be returned")
 	assert.True(t, len(chain) == 3, "Chain should have length == 3")
-	// _, e := fmt.Println(chain)
-	// assert.True(t, e == nil, "Single Chain should be serialized")
 	chains, err := tree.GetAllChains()
 	assert.True(t, err == nil, "Multiple Chains should be returned")
 	assert.True(t, len(chains) == 4, "There should be 4 chains")
-	// _, er := fmt.Println(chains)
-	// assert.True(t, er == nil, "Multiple Chains should be serialized")
 }
 
 func TestAddAdjust(t *testing.T) {
@@ -73,7 +69,17 @@ func TestAddAdjust(t *testing.T) {
 	testTree.AddAdjust(NewNode([]byte("c")))
 	testTree.AddAdjust(NewNode([]byte("d")))
 	assert.True(t, controlTree.Root.Hexdigest() == testTree.Root.Hexdigest(), "Control Tree should have same root val as testTree")
+}
 
+func TestBigTree(t *testing.T) {
+	controlTree := NewTreeFromData(NewTestData()[0:1])
+	testTree := NewBigTree()
+	testTree.AddDigest(hashof("a"))
+	for i := 0; i < 1000; i++ {
+		a := controlTree.AddAdjust(NewNode([]byte("b")))
+		b := testTree.AddDigest(hashof("b"))
+		assert.Equal(t, a, b, "Control Tree should have same root val as testTree")
+	}
 }
 
 func BenchmarkFromDigest(b *testing.B) {
@@ -88,13 +94,18 @@ func BenchmarkFromDigest(b *testing.B) {
 
 func BenchmarkAddAdjust(b *testing.B) {
 	t := NewTreeFromData(NewTestData()[0:1])
-	s := []*Node{}
-	for i := 0; i < b.N; i++ {
-		s = append(s, NewNode([]byte("a")))
-	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		t.AddAdjust(s[i])
+		t.AddAdjust(NewNode([]byte("a")))
+	}
+}
+
+func BenchmarkBigTree(b *testing.B) {
+	t := NewBigTree()
+	d := sha256.Sum256([]byte("a"))
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		t.AddDigest(d[:])
 	}
 }
 
