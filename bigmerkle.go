@@ -30,6 +30,11 @@ func (t *BigTree) AddDigest(digest []byte) []byte {
 	return t.add(n)
 }
 
+func (t *BigTree) Add(data []byte) []byte {
+	digest := sha256.Sum256(data)
+	return t.AddDigest(digest[:])
+}
+
 func (t *BigTree) add(n *BigNode) []byte {
 	top, ok := t.roots.Peek().(*BigNode)
 	if !ok {
@@ -63,9 +68,4 @@ func (t *BigTree) Root() []byte {
 		d = digest[:]
 	}
 	return d
-}
-
-func hashof(s string) []byte {
-	digest := sha256.Sum256([]byte(s))
-	return digest[:]
 }

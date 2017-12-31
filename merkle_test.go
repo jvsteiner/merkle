@@ -19,14 +19,10 @@ func NewTestData() (t [][]byte) {
 }
 
 func NewTestDigests() (t [][]byte) {
-	a := sha256.Sum256([]byte("a"))
-	t = append(t, a[:])
-	b := sha256.Sum256([]byte("b"))
-	t = append(t, b[:])
-	c := sha256.Sum256([]byte("c"))
-	t = append(t, c[:])
-	d := sha256.Sum256([]byte("d"))
-	t = append(t, d[:])
+	t = append(t, hashof("a"))
+	t = append(t, hashof("b"))
+	t = append(t, hashof("c"))
+	t = append(t, hashof("d"))
 	return
 }
 
@@ -107,6 +103,11 @@ func BenchmarkBigTree(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		t.AddDigest(d[:])
 	}
+}
+
+func hashof(s string) []byte {
+	digest := sha256.Sum256([]byte(s))
+	return digest[:]
 }
 
 func init() {
