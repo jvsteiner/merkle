@@ -28,14 +28,14 @@ func NewTestDigests() (t [][]byte) {
 
 func TestBuildData(t *testing.T) {
 	tree := NewTreeFromData(NewTestData())
-	testval := hex.EncodeToString(tree.Root.Digest)
+	testval := hex.EncodeToString(tree.Root())
 	assert.True(t, testval == "14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7", testval)
 }
 
 func TestBuildDigests(t *testing.T) {
 	tree, err := NewTreeFromDigests(NewTestDigests())
 	require.NoError(t, err)
-	testval := hex.EncodeToString(tree.Root.Digest)
+	testval := hex.EncodeToString(tree.Root())
 	assert.True(t, testval == "14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7", testval)
 }
 
@@ -64,7 +64,7 @@ func TestAppend(t *testing.T) {
 	testTree.Append(hashof("b"))
 	testTree.Append(hashof("c"))
 	testTree.Append(hashof("d"))
-	assert.True(t, controlTree.Root.Hexdigest() == testTree.Root.Hexdigest(), "Control Tree should have same root val as testTree")
+	assert.True(t, controlTree.HexRoot() == testTree.HexRoot(), "Control Tree should have same root val as testTree")
 }
 
 func TestBigTree(t *testing.T) {

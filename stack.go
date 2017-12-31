@@ -5,22 +5,18 @@ type element struct {
 	next *element
 }
 
-func (e *element) Next() *element {
-	return e.next
-}
-
 type stack struct {
 	head   *element
 	length int
 }
 
-func (stk *stack) Push(data interface{}) {
+func (stk *stack) push(data interface{}) {
 	e := &element{Data: data, next: stk.head}
 	stk.head = e
 	stk.length++
 }
 
-func (stk *stack) Pop() interface{} {
+func (stk *stack) pop() interface{} {
 	if stk.head == nil {
 		return nil
 	}
@@ -30,22 +26,22 @@ func (stk *stack) Pop() interface{} {
 	return r
 }
 
-func (stk *stack) Peek() interface{} {
+func (stk *stack) peek() interface{} {
 	if stk.head == nil {
 		return nil
 	}
 	return stk.head.Data
 }
 
-func (stk *stack) Len() int {
+func (stk *stack) len() int {
 	return stk.length
 }
 
-func (stk *stack) First() *element {
+func (stk *stack) first() *element {
 	return stk.head
 }
 
-func NewStack() *stack {
+func newStack() *stack {
 	stk := new(stack)
 	return stk
 }
