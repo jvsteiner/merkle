@@ -81,12 +81,12 @@ func NewTreeFromData(data [][]byte) *Tree {
 }
 
 // Add method to add a node to the leaves, when the digest is known, doesn't recalculate the root.
-func Add(t *Tree, d []byte) {
+func (t *Tree) AddDigest(d []byte) {
 	t.Leaves = append(t.Leaves, &Node{Digest: d})
 }
 
 // AddData method to add a node to the leaves, when the data is known, doesn't recalculate the root.
-func AddData(t *Tree, data []byte) {
+func (t *Tree) AddData(data []byte) {
 	t.Leaves = append(t.Leaves, NewNode(data))
 }
 
@@ -126,8 +126,17 @@ func build(layer []*Node) (newLayer []*Node) {
 	return
 }
 
-// AddAdjust adds a new Node to a calculated tree, efficiently reclaculating the root.
-func (t *Tree) AddAdjust(newNode *Node) []byte {
+func (t *Tree) Append(digest []byte) []byte {
+	return t.append(&Node{Digest: digest})
+}
+
+func (t *Tree) AppendData(data []byte) []byte {
+	digest := sha256.Sum256(data)
+	return t.append(&Node{Digest: digest[:]})
+}
+
+// Append adds a new Node to a calculated tree, efficiently reclaculating the root.
+func (t *Tree) append(newNode *Node) []byte {
 	subtrees := t.getWholeSubTrees()
 	t.Leaves = append(t.Leaves, newNode)
 	for i := len(subtrees) - 1; i >= 0; i-- {
@@ -184,4 +193,9 @@ func (t *Tree) GetAllChains() ([]Chain, error) {
 		chains = append(chains, thisChain)
 	}
 	return chains, nil
+}
+
+func hashof(s string) []byte {
+	digest := sha256.Sum256([]byte(s))
+	return digest[:]
 }

@@ -25,17 +25,17 @@ func NewBigTree() *BigTree {
 	return &BigTree{roots: NewStack()}
 }
 
-func (t *BigTree) AddDigest(digest []byte) []byte {
+func (t *BigTree) Append(digest []byte) []byte {
 	n := NewBigNode(digest)
-	return t.add(n)
+	return t.append(n)
 }
 
-func (t *BigTree) Add(data []byte) []byte {
+func (t *BigTree) AppendData(data []byte) []byte {
 	digest := sha256.Sum256(data)
-	return t.AddDigest(digest[:])
+	return t.Append(digest[:])
 }
 
-func (t *BigTree) add(n *BigNode) []byte {
+func (t *BigTree) append(n *BigNode) []byte {
 	top, ok := t.roots.Peek().(*BigNode)
 	if !ok {
 		t.roots.Push(n)
@@ -45,7 +45,7 @@ func (t *BigTree) add(n *BigNode) []byte {
 	if summ&(summ-1) == 0 {
 		top = t.roots.Pop().(*BigNode)
 		n := combine(top, n)
-		return t.add(n)
+		return t.append(n)
 	} else {
 		t.roots.Push(n)
 		return t.Root()

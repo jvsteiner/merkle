@@ -58,22 +58,22 @@ func TestGetChain(t *testing.T) {
 	assert.True(t, len(chains) == 4, "There should be 4 chains")
 }
 
-func TestAddAdjust(t *testing.T) {
+func TestAppend(t *testing.T) {
 	controlTree := NewTreeFromData(NewTestData())
 	testTree := NewTreeFromData(NewTestData()[0:1])
-	testTree.AddAdjust(NewNode([]byte("b")))
-	testTree.AddAdjust(NewNode([]byte("c")))
-	testTree.AddAdjust(NewNode([]byte("d")))
+	testTree.Append(hashof("b"))
+	testTree.Append(hashof("c"))
+	testTree.Append(hashof("d"))
 	assert.True(t, controlTree.Root.Hexdigest() == testTree.Root.Hexdigest(), "Control Tree should have same root val as testTree")
 }
 
 func TestBigTree(t *testing.T) {
 	controlTree := NewTreeFromData(NewTestData()[0:1])
 	testTree := NewBigTree()
-	testTree.AddDigest(hashof("a"))
+	testTree.Append(hashof("a"))
 	for i := 0; i < 1000; i++ {
-		a := controlTree.AddAdjust(NewNode([]byte("b")))
-		b := testTree.AddDigest(hashof("b"))
+		a := controlTree.Append(hashof("b"))
+		b := testTree.Append(hashof("b"))
 		assert.Equal(t, a, b, "Control Tree should have same root val as testTree")
 	}
 }
@@ -88,26 +88,21 @@ func BenchmarkFromDigest(b *testing.B) {
 	NewTreeFromDigests(t)
 }
 
-func BenchmarkAddAdjust(b *testing.B) {
+func BenchmarkAppend(b *testing.B) {
 	t := NewTreeFromData(NewTestData()[0:1])
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		t.AddAdjust(NewNode([]byte("a")))
+		t.Append(hashof("a"))
 	}
 }
 
 func BenchmarkBigTree(b *testing.B) {
 	t := NewBigTree()
-	d := sha256.Sum256([]byte("a"))
+	d := hashof("a")
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		t.AddDigest(d[:])
+		t.Append(d)
 	}
-}
-
-func hashof(s string) []byte {
-	digest := sha256.Sum256([]byte(s))
-	return digest[:]
 }
 
 func init() {
