@@ -11,8 +11,7 @@ type stack struct {
 }
 
 func (stk *stack) push(data interface{}) {
-	e := &element{data: data, next: stk.head}
-	stk.head = e
+	stk.head = &element{data: data, next: stk.head}
 	stk.length++
 }
 
@@ -31,14 +30,6 @@ func (stk *stack) peek() interface{} {
 		return nil
 	}
 	return stk.head.data
-}
-
-func (stk *stack) len() int {
-	return stk.length
-}
-
-func (stk *stack) first() *element {
-	return stk.head
 }
 
 func newStack() *stack {

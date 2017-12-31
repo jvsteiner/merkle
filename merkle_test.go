@@ -41,11 +41,11 @@ func TestBuildDigests(t *testing.T) {
 
 func TestRelationships(t *testing.T) {
 	tree := NewTreeFromData(NewTestData())
-	assert.True(t, tree.Leaves[0].LeftSide, "Node 0 is left side")
-	assert.True(t, tree.Leaves[2].LeftSide, "Node 2 is left side")
-	assert.False(t, tree.Leaves[1].LeftSide, "Node 1 is left side")
-	assert.False(t, tree.Leaves[3].LeftSide, "Node 3 is left side")
-	assert.True(t, tree.Leaves[0].Parent.LeftSide, "Node 0-1 is left side")
+	assert.True(t, tree.leaves[0].leftSide, "Node 0 is left side")
+	assert.True(t, tree.leaves[2].leftSide, "Node 2 is left side")
+	assert.False(t, tree.leaves[1].leftSide, "Node 1 is left side")
+	assert.False(t, tree.leaves[3].leftSide, "Node 3 is left side")
+	assert.True(t, tree.leaves[0].parent.leftSide, "Node 0-1 is left side")
 }
 
 func TestGetChain(t *testing.T) {

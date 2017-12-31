@@ -65,7 +65,7 @@ func combine(l, r *bigNode) *bigNode {
 
 // Root returns the merkle root of a tree - this is calculated upon request, using the stack of whole-subtree merkle roots.
 func (t *BigTree) Root() []byte {
-	top := t.roots.first()
+	top := t.roots.head
 	if top == nil {
 		return nil
 	}
