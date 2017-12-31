@@ -1,6 +1,9 @@
 package merkle
 
-import "crypto/sha256"
+import (
+	"crypto/sha256"
+	"encoding/hex"
+)
 
 // bigNode element struct, holds digest and number of children, including itself. Represents the root of a
 // complete subtree.
@@ -66,10 +69,15 @@ func (t *BigTree) Root() []byte {
 	if top == nil {
 		return nil
 	}
-	d := top.Data.(*bigNode).digest
+	d := top.data.(*bigNode).digest
 	for i := top.next; i != nil; i = i.next {
-		digest := sha256.Sum256(append(i.Data.(*bigNode).digest, d...))
+		digest := sha256.Sum256(append(i.data.(*bigNode).digest, d...))
 		d = digest[:]
 	}
 	return d
+}
+
+// HexRoot return the hex encoded digest which is the merkle root of the tree
+func (t *BigTree) HexRoot() string {
+	return hex.EncodeToString(t.Root())
 }

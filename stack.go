@@ -1,7 +1,7 @@
 package merkle
 
 type element struct {
-	Data interface{}
+	data interface{}
 	next *element
 }
 
@@ -11,7 +11,7 @@ type stack struct {
 }
 
 func (stk *stack) push(data interface{}) {
-	e := &element{Data: data, next: stk.head}
+	e := &element{data: data, next: stk.head}
 	stk.head = e
 	stk.length++
 }
@@ -20,7 +20,7 @@ func (stk *stack) pop() interface{} {
 	if stk.head == nil {
 		return nil
 	}
-	r := stk.head.Data
+	r := stk.head.data
 	stk.head = stk.head.next
 	stk.length--
 	return r
@@ -30,7 +30,7 @@ func (stk *stack) peek() interface{} {
 	if stk.head == nil {
 		return nil
 	}
-	return stk.head.Data
+	return stk.head.data
 }
 
 func (stk *stack) len() int {
