@@ -40,7 +40,6 @@ func (t *BigTree) Append(digest []byte) []byte {
 
 // Append adds an additional leaf onto the bigtree, accepting data, hashing it, and returning the new root
 func (t *BigTree) AppendData(data []byte) []byte {
-	t.Lock()
 	digest := sha256.Sum256(data)
 	return t.Append(digest[:])
 }

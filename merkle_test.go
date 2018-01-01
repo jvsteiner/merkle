@@ -82,7 +82,7 @@ func TestAppend(t *testing.T) {
 func TestBigTree(t *testing.T) {
 	controlTree := NewTreeFromData(NewTestData()[0:1])
 	testTree := NewBigTree()
-	testTree.Append(hashof("a"))
+	testTree.AppendData([]byte("a"))
 	for i := 0; i < 1000; i++ {
 		a := controlTree.Append(hashof("b"))
 		b := testTree.Append(hashof("b"))
