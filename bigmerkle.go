@@ -28,7 +28,7 @@ type BigTree struct {
 
 // NewBigTree constructs a new BigTree
 func NewBigTree() *BigTree {
-	return &BigTree{roots: newStack()}
+	return &BigTree{roots: new(stack)}
 }
 
 // Append adds an additional leaf onto the bigtree, accepting a digest, and returning the new root
@@ -49,8 +49,7 @@ func (t *BigTree) append(n *bigNode) []byte {
 	top, ok := t.roots.peek().(*bigNode)
 	if !ok {
 		t.roots.push(n)
-		t.Unlock()
-		return t.Root()
+		return t.root()
 	}
 	summ := top.sumOf + n.sumOf
 	if summ&(summ-1) == 0 {
@@ -59,8 +58,7 @@ func (t *BigTree) append(n *bigNode) []byte {
 		return t.append(n)
 	} else {
 		t.roots.push(n)
-		t.Unlock()
-		return t.Root()
+		return t.root()
 	}
 }
 
@@ -70,8 +68,7 @@ func combine(l, r *bigNode) *bigNode {
 }
 
 // Root returns the merkle root of a tree - this is calculated upon request, using the stack of whole-subtree merkle roots.
-func (t *BigTree) Root() []byte {
-	t.Lock()
+func (t *BigTree) root() []byte {
 	defer t.Unlock()
 	top := t.roots.head
 	if top == nil {
@@ -83,6 +80,11 @@ func (t *BigTree) Root() []byte {
 		d = digest[:]
 	}
 	return d
+}
+
+func (t *BigTree) Root() []byte {
+	t.Lock()
+	return t.root()
 }
 
 // HexRoot return the hex encoded digest which is the merkle root of the tree

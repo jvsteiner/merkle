@@ -31,8 +31,3 @@ func (stk *stack) peek() interface{} {
 	}
 	return stk.head.data
 }
-
-func newStack() *stack {
-	stk := new(stack)
-	return stk
-}
