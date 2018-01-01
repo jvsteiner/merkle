@@ -56,6 +56,20 @@ func TestGetChain(t *testing.T) {
 	assert.True(t, VerifyChain(chain), "chain should verify")
 }
 
+func TestJoinChains(t *testing.T) {
+	lowtree := NewTreeFromData(NewTestData())
+	hiTree := NewTreeFromData(NewTestData()[0:1])
+	hiTree.Append(lowtree.Root())
+	lowchain, err := lowtree.GetChain(0)
+	require.NoError(t, err, "Should be no error")
+	hichain, err := hiTree.GetChain(1)
+	require.NoError(t, err, "Should be no error")
+	joinedChain, err := JoinChains(lowchain, hichain)
+	require.NoError(t, err, "Should be no error")
+	assert.Equal(t, len(joinedChain), 5, "Chain should have length == 5")
+	assert.True(t, VerifyChain(joinedChain), "joined chain should verify")
+}
+
 func TestAppend(t *testing.T) {
 	controlTree := NewTreeFromData(NewTestData())
 	testTree := NewTreeFromData(NewTestData()[0:1])
