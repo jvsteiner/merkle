@@ -52,10 +52,8 @@ func TestGetChain(t *testing.T) {
 	tree := NewTreeFromData(NewTestData())
 	chain, err := tree.GetChain(0)
 	assert.True(t, err == nil, "Single Chain should be returned")
-	assert.True(t, len(chain) == 3, "Chain should have length == 3")
-	chains, err := tree.GetAllChains()
-	assert.True(t, err == nil, "Multiple Chains should be returned")
-	assert.True(t, len(chains) == 4, "There should be 4 chains")
+	assert.True(t, len(chain) == 4, "Chain should have length == 4")
+	assert.True(t, VerifyChain(chain), "chain should verify")
 }
 
 func TestAppend(t *testing.T) {
@@ -74,7 +72,7 @@ func TestBigTree(t *testing.T) {
 	for i := 0; i < 1000; i++ {
 		a := controlTree.Append(hashof("b"))
 		b := testTree.Append(hashof("b"))
-		assert.Equal(t, a, b, "Control Tree should have same root val as testTree")
+		assert.Equal(t, a, b, "Control Tree should have same root val as Test Tree")
 	}
 }
 
@@ -88,15 +86,16 @@ func BenchmarkFromDigest(b *testing.B) {
 	NewTreeFromDigests(t)
 }
 
-func BenchmarkAppend(b *testing.B) {
+func BenchmarkTreeAppend(b *testing.B) {
 	t := NewTreeFromData(NewTestData()[0:1])
+	d := hashof("a")
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		t.Append(hashof("a"))
+		t.Append(d)
 	}
 }
 
-func BenchmarkBigTree(b *testing.B) {
+func BenchmarkBigTreeAppend(b *testing.B) {
 	t := NewBigTree()
 	d := hashof("a")
 	b.ResetTimer()

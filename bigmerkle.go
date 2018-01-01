@@ -3,6 +3,7 @@ package merkle
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"sync"
 )
 
 // bigNode element struct, holds digest and number of children, including itself. Represents the root of a
@@ -21,6 +22,7 @@ type bigNode struct {
 // number of leaves of 18446744073709551615 (max unit64) and still maintain acceptable memory usage, and servicable
 // hash chain retrieval times.
 type BigTree struct {
+	sync.Mutex
 	roots *stack
 }
 
@@ -31,12 +33,14 @@ func NewBigTree() *BigTree {
 
 // Append adds an additional leaf onto the bigtree, accepting a digest, and returning the new root
 func (t *BigTree) Append(digest []byte) []byte {
+	t.Lock()
 	n := &bigNode{digest: digest, sumOf: 1}
 	return t.append(n)
 }
 
 // Append adds an additional leaf onto the bigtree, accepting data, hashing it, and returning the new root
 func (t *BigTree) AppendData(data []byte) []byte {
+	t.Lock()
 	digest := sha256.Sum256(data)
 	return t.Append(digest[:])
 }
@@ -45,6 +49,7 @@ func (t *BigTree) append(n *bigNode) []byte {
 	top, ok := t.roots.peek().(*bigNode)
 	if !ok {
 		t.roots.push(n)
+		t.Unlock()
 		return t.Root()
 	}
 	summ := top.sumOf + n.sumOf
@@ -54,6 +59,7 @@ func (t *BigTree) append(n *bigNode) []byte {
 		return t.append(n)
 	} else {
 		t.roots.push(n)
+		t.Unlock()
 		return t.Root()
 	}
 }
@@ -65,6 +71,8 @@ func combine(l, r *bigNode) *bigNode {
 
 // Root returns the merkle root of a tree - this is calculated upon request, using the stack of whole-subtree merkle roots.
 func (t *BigTree) Root() []byte {
+	t.Lock()
+	defer t.Unlock()
 	top := t.roots.head
 	if top == nil {
 		return nil

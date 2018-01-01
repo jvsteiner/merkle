@@ -175,27 +175,21 @@ func (t *Tree) GetChain(i int) (Chain, error) {
 	node := t.leaves[i]
 	chain = append(chain, node)
 	for node.parent != nil {
-		chain = append(chain, node.parent)
+		chain = append(chain, sibling(node))
 		node = node.parent
 	}
+	chain = append(chain, node)
 	return chain, nil
-}
-
-// GetAllChains gets a slice of chains, one for each leaf, probably could be optimized
-// to reduce the number of traversals.
-func (t *Tree) GetAllChains() ([]Chain, error) {
-	chains := []Chain{}
-	for i := 0; i <= len(t.leaves)-1; i++ {
-		thisChain, err := t.GetChain(i)
-		if err != nil {
-			return chains, err
-		}
-		chains = append(chains, thisChain)
-	}
-	return chains, nil
 }
 
 func hashof(s string) []byte {
 	digest := sha256.Sum256([]byte(s))
 	return digest[:]
+}
+
+func sibling(n *node) *node {
+	if n.leftSide {
+		return n.parent.right
+	}
+	return n.parent.left
 }
