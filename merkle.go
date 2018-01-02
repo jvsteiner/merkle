@@ -6,65 +6,44 @@ import (
 	"errors"
 )
 
-// node element struct, holds digest and relationships
 type node struct {
 	digest              []byte
-	leftSide            bool
+	leftside            bool
 	parent, left, right *node
 }
 
-// Tree is the structure. Only the root is held, HashFunction is unused currently
+// Tree is the structure. HashFunction is unused currently, but is intended to be used to configure the hash
+// algorithm which is used.
 type Tree struct {
 	root         *node
 	HashFunction string
 	leaves       []*node
+	size         int
 }
 
-// Chain is not much used now, perhaps useful to serialize a chain
-type Chain []*node
-
-// Utility function to efficiently calculate the greatest power of 2 less that a given
-// integer, more performant by several times than solutions using the math.Log2 function
-func hibit(n int) int {
-	n |= (n >> 1)
-	n |= (n >> 2)
-	n |= (n >> 4)
-	n |= (n >> 8)
-	n |= (n >> 16)
-	return n - (n >> 1)
-}
-
-// newNode is a constructor for a node, based on underlying data.  For construction based on a precalculated digest
-// simply use node := merkle.node{digest: digest[:]} as suggested below.
-func newNode(data []byte) *node {
+func newnode(data []byte) *node {
 	digest := sha256.Sum256(data)
 	n := &node{digest: digest[:]}
 	return n
 }
 
 // NewTreeFromDigests constructor can be used when the digests are known for all leaves.
-func NewTreeFromDigests(digests [][]byte) (*Tree, error) {
+func NewTreeFromDigests(digests [][]byte) *Tree {
 	t := &Tree{}
 	for i := range digests {
 		t.leaves = append(t.leaves, &node{digest: digests[i]})
 	}
-	_, err := t.Build()
-	if err != nil {
-		return nil, err
-	}
-	return t, nil
+	t.Build()
+	return t
 }
 
 // NewTreeFromData constructor for when the data are known for all leaves.
 func NewTreeFromData(data [][]byte) *Tree {
 	t := &Tree{}
 	for i := range data {
-		t.leaves = append(t.leaves, newNode(data[i]))
+		t.leaves = append(t.leaves, newnode(data[i]))
 	}
-	_, err := t.Build()
-	if err != nil {
-		panic(err)
-	}
+	t.Build()
 	return t
 }
 
@@ -85,23 +64,23 @@ func (t *Tree) Add(d []byte) {
 
 // AddData method to add a node to the leaves, when the data is known, doesn't recalculate the root.
 func (t *Tree) AddData(data []byte) {
-	t.leaves = append(t.leaves, newNode(data))
+	t.leaves = append(t.leaves, newnode(data))
 }
 
 // Build the tree: call, once the leaves are defined, to calculate the root.
-func (t *Tree) Build() ([]byte, error) {
+func (t *Tree) Build() []byte {
 	if len(t.leaves) == 0 {
-		return nil, errors.New("No leaves to build")
+		return nil
 	}
 	layer := t.leaves[:]
 	for len(layer) != 1 {
 		layer = build(layer)
 	}
 	t.root = layer[0]
-	return t.root.digest, nil
+	t.size = len(t.leaves)
+	return t.root.digest
 }
 
-// create the tree relationships from a set of leaves, layer by layer
 func build(layer []*node) (newLayer []*node) {
 	odd := &node{}
 	if len(layer)%2 == 1 {
@@ -114,7 +93,7 @@ func build(layer []*node) (newLayer []*node) {
 			digest: newdigest[:],
 		}
 		newnode.left, newnode.right = layer[i], layer[i+1]
-		layer[i].leftSide, layer[i+1].leftSide = true, false
+		layer[i].leftside, layer[i+1].leftside = true, false
 		layer[i].parent, layer[i+1].parent = &newnode, &newnode
 		newLayer = append(newLayer, &newnode)
 	}
@@ -135,24 +114,21 @@ func (t *Tree) AppendData(data []byte) []byte {
 	return t.append(&node{digest: digest[:]})
 }
 
-// Append adds a new node to a calculated tree, efficiently reclaculating the root.
-func (t *Tree) append(newnode *node) []byte {
+func (t *Tree) append(n *node) []byte {
 	subtrees := t.getWholeSubTrees()
-	t.leaves = append(t.leaves, newnode)
+	t.leaves = append(t.leaves, n)
 	for i := len(subtrees) - 1; i >= 0; i-- {
-		newparent := newNode(append(subtrees[i].digest[:], newnode.digest[:]...))
-		subtrees[i].parent, newnode.parent = newparent, newparent
-		newparent.left, newparent.right = subtrees[i], newnode
-		subtrees[i].leftSide, newnode.leftSide = true, false
-		newnode = newnode.parent
+		newparent := newnode(append(subtrees[i].digest[:], n.digest[:]...))
+		subtrees[i].parent, n.parent = newparent, newparent
+		newparent.left, newparent.right = subtrees[i], n
+		subtrees[i].leftside, n.leftside = true, false
+		n = n.parent
 	}
-	t.root = newnode
+	t.root = n
+	t.size++
 	return t.root.digest
 }
 
-// return a slice of whole subtrees (number of nodes below are power of 2).
-// All trees consist of some number of subtrees.  This is used to recalculate the root
-// without recalculating all the hashes.
 func (t *Tree) getWholeSubTrees() []*node {
 	subtrees := []*node{}
 	looseleaves := len(t.leaves) - hibit(len(t.leaves))
@@ -166,20 +142,38 @@ func (t *Tree) getWholeSubTrees() []*node {
 	return subtrees
 }
 
+func convert(n *node) *Node {
+	return &Node{Digest: n.digest, LeftSide: n.leftside}
+}
+
 // GetChain gets the chain, from the leaf at index i, to the root.
-func (t *Tree) GetChain(i int) (Chain, error) {
-	chain := Chain{}
+func (t *Tree) GetChain(i int) (*Chain, error) {
+	chain := &Chain{}
 	if i > len(t.leaves)-1 || i < 0 {
-		return chain, errors.New("Leaf index does not exist")
+		return nil, errors.New("Leaf index does not exist")
 	}
 	node := t.leaves[i]
-	chain = append(chain, node)
+	chain.Nodes = append(chain.Nodes, convert(node))
 	for node.parent != nil {
-		chain = append(chain, sibling(node))
+		chain.Nodes = append(chain.Nodes, convert(sibling(node)))
 		node = node.parent
 	}
-	chain = append(chain, node)
+	chain.Nodes = append(chain.Nodes, convert(node))
 	return chain, nil
+}
+
+// Leaves return a pointer to a serializable (protobuf) copy of the tree leaves that can be used for persistence
+func (t *Tree) Leaves() *Leaves {
+	l := &Leaves{Len: int32(len(t.leaves))}
+	for _, leaf := range t.leaves {
+		l.Digests = append(l.Digests, leaf.digest)
+	}
+	return l
+}
+
+// Rebuild rebuilds a Tree from the Leaves protobuf that contains the leaf digests.
+func Rebuild(l *Leaves) *Tree {
+	return NewTreeFromDigests(l.Digests)
 }
 
 func hashof(s string) []byte {
@@ -188,8 +182,17 @@ func hashof(s string) []byte {
 }
 
 func sibling(n *node) *node {
-	if n.leftSide {
+	if n.leftside {
 		return n.parent.right
 	}
 	return n.parent.left
+}
+
+func hibit(n int) int {
+	n |= (n >> 1)
+	n |= (n >> 2)
+	n |= (n >> 4)
+	n |= (n >> 8)
+	n |= (n >> 16)
+	return n - (n >> 1)
 }

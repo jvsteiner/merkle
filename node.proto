@@ -1,0 +1,16 @@
+syntax = "proto3";
+package merkle;
+
+message Node {
+	bytes Digest = 1;
+	bool LeftSide = 2;
+}
+
+message Chain {
+	repeated Node Nodes = 1;
+}
+
+message Leaves {
+	int32 Len = 1;
+	repeated bytes Digests = 2;
+}

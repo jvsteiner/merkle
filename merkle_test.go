@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -33,31 +34,32 @@ func TestBuildData(t *testing.T) {
 }
 
 func TestBuildDigests(t *testing.T) {
-	tree, err := NewTreeFromDigests(NewTestDigests())
-	require.NoError(t, err)
+	tree := NewTreeFromDigests(NewTestDigests())
 	testval := hex.EncodeToString(tree.Root())
 	assert.True(t, testval == "14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7", testval)
 }
 
 func TestRelationships(t *testing.T) {
 	tree := NewTreeFromData(NewTestData())
-	assert.True(t, tree.leaves[0].leftSide, "Node 0 is left side")
-	assert.True(t, tree.leaves[2].leftSide, "Node 2 is left side")
-	assert.False(t, tree.leaves[1].leftSide, "Node 1 is left side")
-	assert.False(t, tree.leaves[3].leftSide, "Node 3 is left side")
-	assert.True(t, tree.leaves[0].parent.leftSide, "Node 0-1 is left side")
+	assert.True(t, tree.leaves[0].leftside, "Node 0 is left side")
+	assert.True(t, tree.leaves[2].leftside, "Node 2 is left side")
+	assert.False(t, tree.leaves[1].leftside, "Node 1 is left side")
+	assert.False(t, tree.leaves[3].leftside, "Node 3 is left side")
+	assert.True(t, tree.leaves[0].parent.leftside, "Node 0-1 is left side")
 }
 
 func TestGetChain(t *testing.T) {
 	tree := NewTreeFromData(NewTestData())
 	chain, err := tree.GetChain(0)
 	assert.True(t, err == nil, "Single Chain should be returned")
-	assert.True(t, len(chain) == 4, "Chain should have length == 4")
+	assert.True(t, len(chain.Nodes) == 4, "Chain should have length == 4")
 	assert.True(t, VerifyChain(chain), "chain should verify")
 }
 
 func TestJoinChains(t *testing.T) {
 	lowtree := NewTreeFromData(NewTestData())
+	// ddd, _ := json.Marshal(lowtree.Leaves())
+	// t.Log(len(ddd))
 	hiTree := NewTreeFromData(NewTestData()[0:1])
 	hiTree.Append(lowtree.Root())
 	lowchain, err := lowtree.GetChain(0)
@@ -66,7 +68,7 @@ func TestJoinChains(t *testing.T) {
 	require.NoError(t, err, "Should be no error")
 	joinedChain, err := JoinChains(lowchain, hichain)
 	require.NoError(t, err, "Should be no error")
-	assert.Equal(t, len(joinedChain), 5, "Chain should have length == 5")
+	assert.Equal(t, len(joinedChain.Nodes), 5, "Chain should have length == 5")
 	assert.True(t, VerifyChain(joinedChain), "joined chain should verify")
 }
 
@@ -79,15 +81,32 @@ func TestAppend(t *testing.T) {
 	assert.True(t, controlTree.HexRoot() == testTree.HexRoot(), "Control Tree should have same root val as testTree")
 }
 
+func TestSerializeTree(t *testing.T) {
+	tree := NewTreeFromData(NewTestData())
+	leavesBlob, err := proto.Marshal(tree.Leaves())
+	require.NoError(t, err, "Should be no error")
+	var l Leaves
+	err = proto.Unmarshal(leavesBlob, &l)
+	require.NoError(t, err, "Should be no error")
+	newtree := NewTreeFromDigests(l.Digests)
+	assert.Equal(t, tree.Root(), newtree.Root(), "should be equal")
+}
+
 func TestBigTree(t *testing.T) {
 	controlTree := NewTreeFromData(NewTestData()[0:1])
-	testTree := NewBigTree()
+	testTree := NewBigTree(8)
 	testTree.AppendData([]byte("a"))
 	for i := 0; i < 1000; i++ {
 		a := controlTree.Append(hashof("b"))
 		b := testTree.Append(hashof("b"))
 		assert.Equal(t, a, b, "Control Tree should have same root val as Test Tree")
 	}
+}
+
+func TestReduce(t *testing.T) {
+	tree := NewTreeFromData(NewTestData())
+	reduced := reduce(tree)
+	assert.Equal(t, reduced.Root(), tree.Root(), "should be equal")
 }
 
 func BenchmarkFromDigest(b *testing.B) {
@@ -110,12 +129,29 @@ func BenchmarkTreeAppend(b *testing.B) {
 }
 
 func BenchmarkBigTreeAppend(b *testing.B) {
-	t := NewBigTree()
+	t := NewBigTree(8)
 	d := hashof("a")
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		t.Append(d)
 	}
+}
+
+func BenchmarkTreeSerialization(b *testing.B) {
+	tree := NewTreeFromData(NewTestData())
+	d := hashof("a")
+	for i := 0; i < (1 << 12); i++ {
+		tree.Append(d)
+	}
+	b.ResetTimer()
+	var leavesBlob []byte
+	for i := 0; i < b.N; i++ {
+		leavesBlob, _ = proto.Marshal(tree.Leaves())
+		var l Leaves
+		proto.Unmarshal(leavesBlob, &l)
+		NewTreeFromDigests(l.Digests)
+	}
+	b.Log(len(leavesBlob))
 }
 
 func init() {
