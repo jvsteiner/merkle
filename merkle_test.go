@@ -2,7 +2,6 @@ package merkle
 
 import (
 	"crypto/sha256"
-	"encoding/hex"
 	"runtime"
 	"testing"
 
@@ -29,14 +28,12 @@ func NewTestDigests() (t [][]byte) {
 
 func TestBuildData(t *testing.T) {
 	tree := NewTreeFromData(NewTestData())
-	testval := hex.EncodeToString(tree.Root())
-	assert.True(t, testval == "14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7", testval)
+	assert.True(t, tree.HexRoot() == "14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7", tree.HexRoot())
 }
 
 func TestBuildDigests(t *testing.T) {
 	tree := NewTreeFromDigests(NewTestDigests())
-	testval := hex.EncodeToString(tree.Root())
-	assert.True(t, testval == "14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7", testval)
+	assert.True(t, tree.HexRoot() == "14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7", tree.HexRoot())
 }
 
 func TestRelationships(t *testing.T) {
@@ -151,7 +148,6 @@ func BenchmarkTreeSerialization(b *testing.B) {
 		proto.Unmarshal(leavesBlob, &l)
 		NewTreeFromDigests(l.Digests)
 	}
-	b.Log(len(leavesBlob))
 }
 
 func init() {

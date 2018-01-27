@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"sync"
 )
 
 type node struct {
@@ -15,6 +16,7 @@ type node struct {
 // Tree is the structure. HashFunction is unused currently, but is intended to be used to configure the hash
 // algorithm which is used.
 type Tree struct {
+	mtx          sync.Mutex
 	root         *node
 	HashFunction string
 	leaves       []*node
@@ -69,6 +71,8 @@ func (t *Tree) AddData(data []byte) {
 
 // Build the tree: call, once the leaves are defined, to calculate the root.
 func (t *Tree) Build() []byte {
+	t.mtx.Lock()
+	defer t.mtx.Unlock()
 	if len(t.leaves) == 0 {
 		return nil
 	}
@@ -105,16 +109,19 @@ func build(layer []*node) (newLayer []*node) {
 
 // Append adds an additional leaf onto the tree, accepting a digest, and returning the new root
 func (t *Tree) Append(digest []byte) []byte {
+	t.mtx.Lock()
 	return t.append(&node{digest: digest})
 }
 
 // AppendData adds an additional leaf onto the tree, accepting data, hashing it, and returning the new root
 func (t *Tree) AppendData(data []byte) []byte {
+	t.mtx.Lock()
 	digest := sha256.Sum256(data)
 	return t.append(&node{digest: digest[:]})
 }
 
 func (t *Tree) append(n *node) []byte {
+	defer t.mtx.Unlock()
 	subtrees := t.getWholeSubTrees()
 	t.leaves = append(t.leaves, n)
 	for i := len(subtrees) - 1; i >= 0; i-- {

@@ -6,36 +6,48 @@ import (
 	"sync"
 )
 
-// BigTree is an optimized merkle tree structure. Only a stack containing complete subtree roots is held in memory.
-// BigTreess are more performant at adding new leaves than Trees, and maintain nearly constant memory usage, however
+// BigTree is an optimized Merkle tree structure. Only a stack containing complete subtree roots is held in memory.
+// BigTrees are more performant at adding new leaves than Trees, and maintain nearly constant memory usage, however
 // currently they do not allow the user to retrieve hash chains from them - this feature will be added in the future,
 // however, it will inevitably be slower than what is possible for an all-memory tree.
 //
-// The design goal of BigTree is to provide a cloud scalable merkle tree - one that can facilitate trees with a max
-// number of leaves of 18446744073709551615 (max unit64) and still maintain acceptable memory usage, and servicable
+// The design goal of BigTree is to provide a cloud scalable Merkle tree - one that can facilitate trees with a max
+// number of leaves of 18446744073709551615 (max unit64) and still maintain acceptable memory usage, and serviceable
 // hash chain retrieval times.
 type BigTree struct {
-	sync.Mutex
+	mtx            sync.Mutex
 	roots          *stack
 	maxsubtreesize int
 }
 
-// NewBigTree constructs a new BigTree
+// NewBigTree constructs a new, empty BigTree where the subtrees are of max size 2^power.  power = 8-16 are reasonable
+// values to reduce memory usage.
 func NewBigTree(power uint8) *BigTree {
 	return &BigTree{roots: new(stack), maxsubtreesize: 1 << power}
 }
 
-// Append adds an additional leaf onto the bigtree, accepting a digest, and returning the new root
+// Append adds an additional leaf onto the BigTree, accepting a digest, and returning the new root
 func (bt *BigTree) Append(digest []byte) []byte {
-	bt.Lock()
 	n := NewTreeFromDigests([][]byte{digest})
+	bt.mtx.Lock()
 	return bt.append(n)
 }
 
-// Append adds an additional leaf onto the bigtree, accepting data, hashing it, and returning the new root
+// Append adds an additional leaf onto the BigTree, accepting data, hashing it, and returning the new root
 func (bt *BigTree) AppendData(data []byte) []byte {
 	digest := sha256.Sum256(data)
 	return bt.Append(digest[:])
+}
+
+// HexRoot return the hex encoded digest which is the Merkle root of the tree
+func (bt *BigTree) HexRoot() string {
+	return hex.EncodeToString(bt.Root())
+}
+
+// Root returns the root digest of the Tree
+func (bt *BigTree) Root() []byte {
+	bt.mtx.Lock()
+	return bt.root()
 }
 
 func (bt *BigTree) append(t *Tree) []byte {
@@ -74,13 +86,12 @@ func combine(l, r *Tree) *Tree {
 	l.root.parent, r.root.parent = newroot, newroot
 	l.root.leftside, r.root.leftside = true, false
 	l.root = newroot
-	l.size *= 2
+	l.size += r.size
 	return l
 }
 
-// Root returns the merkle root of a tree - this is calculated upon request, using the stack of whole-subtree merkle roots.
 func (bt *BigTree) root() []byte {
-	defer bt.Unlock()
+	defer bt.mtx.Unlock()
 	top := bt.roots.head
 	if top == nil {
 		return nil
@@ -91,15 +102,4 @@ func (bt *BigTree) root() []byte {
 		d = digest[:]
 	}
 	return d
-}
-
-// Root returns the root digest of the Tree
-func (bt *BigTree) Root() []byte {
-	bt.Lock()
-	return bt.root()
-}
-
-// HexRoot return the hex encoded digest which is the merkle root of the tree
-func (bt *BigTree) HexRoot() string {
-	return hex.EncodeToString(bt.Root())
 }
